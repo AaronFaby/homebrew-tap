@@ -1,0 +1,99 @@
+name: bump icloud formula
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: iCloud CLI release tag, such as v1.0.4
+        required: true
+        type: string
+      revision:
+        description: Git commit SHA for the release tag
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    steps:
+      - name: Check out tap
+        uses: actions/checkout@v6
+
+      - name: Validate inputs
+        env:
+          TAG: ${{ inputs.tag }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+$ ]] || {
+            echo "Invalid tag: $TAG" >&2
+            exit 1
+          }
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Invalid revision: $REVISION" >&2
+            exit 1
+          }
+
+      - name: Update formula
+        env:
+          TAG: ${{ inputs.tag }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          ruby <<'RUBY'
+          path = "Formula/icloud.rb"
+          tag = ENV.fetch("TAG")
+          revision = ENV.fetch("REVISION")
+          text = File.read(path)
+          changed = text.sub!(/tag:\s+"v[^"]+"/, %{tag:      "#{tag}"})
+          changed = text.sub!(/revision:\s+"[0-9a-f]{40}"/, %{revision: "#{revision}"}) || changed
+          abort "formula did not contain expected tag/revision fields" unless changed
+          File.write(path, text)
+          RUBY
+
+      - name: Stop if already current
+        id: diff
+        run: |
+          if git diff --quiet -- Formula/icloud.rb; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Homebrew
+        if: steps.diff.outputs.changed == 'true'
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate formula
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          brew audit --strict --formula Formula/icloud.rb
+          brew install --build-from-source ./Formula/icloud.rb
+          brew test ./Formula/icloud.rb
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          branch="bump/icloud-${TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add Formula/icloud.rb
+          git commit -m "icloud ${TAG}"
+          git push --force-with-lease origin "$branch"
+
+          body="Updates the icloud formula to ${TAG} (${REVISION})."
+          if gh pr view "$branch" --json url >/tmp/pr-url.json 2>/dev/null; then
+            gh pr edit "$branch" --title "icloud ${TAG}" --body "$body"
+            gh pr view "$branch" --json url --jq .url
+          else
+            gh pr create --title "icloud ${TAG}" --body "$body" --base main --head "$branch"
+          fi
