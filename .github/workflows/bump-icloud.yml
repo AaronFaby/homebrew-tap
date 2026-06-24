@@ -74,7 +74,7 @@ jobs:
       - name: Validate formula
         if: steps.diff.outputs.changed == 'true'
         run: |
-          brew audit --strict --formula Formula/icloud.rb
+          brew audit --strict --formula aaronfaby/tap/icloud
           brew install --build-from-source ./Formula/icloud.rb
           brew test ./Formula/icloud.rb
 
