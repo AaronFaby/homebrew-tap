@@ -21,7 +21,7 @@ env:
 
 jobs:
   bump:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Check out tap
         uses: actions/checkout@v7
