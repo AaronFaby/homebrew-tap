@@ -94,8 +94,8 @@ jobs:
 
           body="Updates the icloud formula to ${TAG} (${REVISION})."
           if gh pr view "$branch" --json url >/tmp/pr-url.json 2>/dev/null; then
-            gh pr edit "$branch" --title "icloud ${TAG}" --body "$body"
-            gh pr view "$branch" --json url --jq .url
+            gh pr edit "$branch" --title "icloud ${TAG}" --body "$body" || echo "::notice::Formula bump branch was pushed, but this token could not edit the pull request."
+            gh pr view "$branch" --json url --jq .url || true
           else
-            gh pr create --title "icloud ${TAG}" --body "$body" --base main --head "$branch"
+            gh pr create --title "icloud ${TAG}" --body "$body" --base main --head "$branch" || echo "::notice::Formula bump branch was pushed. Create a pull request manually: https://github.com/AaronFaby/homebrew-tap/pull/new/${branch}"
           fi
