@@ -2,8 +2,8 @@ class Icloud < Formula
   desc "JSON-first CLI for iCloud Mail, Calendar, and Contacts automation"
   homepage "https://github.com/AaronFaby/icloud-cli"
   url "https://github.com/AaronFaby/icloud-cli.git",
-      tag:      "v1.0.4",
-      revision: "42364b642a43d524b4e5c6860ce67507a23ee83c"
+      tag:      "v1.0.5",
+      revision: "81da7e4b2823556d1dcfa4ede4c3b62ab611afe7"
   license "MIT"
 
   depends_on "go" => :build
