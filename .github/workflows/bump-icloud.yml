@@ -40,6 +40,11 @@ jobs:
             exit 1
           }
 
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update formula
         env:
           TAG: ${{ inputs.tag }}
@@ -64,12 +69,6 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Set up Homebrew
-        if: steps.diff.outputs.changed == 'true'
-        uses: Homebrew/actions/setup-homebrew@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Validate formula
         if: steps.diff.outputs.changed == 'true'
