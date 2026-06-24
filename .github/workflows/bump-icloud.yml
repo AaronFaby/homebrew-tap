@@ -75,8 +75,8 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: |
           brew audit --strict --formula aaronfaby/tap/icloud
-          brew install --build-from-source ./Formula/icloud.rb
-          brew test ./Formula/icloud.rb
+          brew install --build-from-source aaronfaby/tap/icloud
+          brew test aaronfaby/tap/icloud
 
       - name: Create pull request
         if: steps.diff.outputs.changed == 'true'
